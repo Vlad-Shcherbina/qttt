@@ -7,7 +7,7 @@ typedef uint8_t Square;
 
 
 inline Square make_empty() {
-  return 0;
+  return 0xff;
 }
 
 inline Square make_classic(int age) {
@@ -22,14 +22,16 @@ inline Square make_quantum(int age, int link) {
 }
 
 inline bool is_empty(Square s) {
-  return !s;
+  return s == 0xff;
 }
 
 inline bool is_classic(Square s) {
+  assert(!is_empty(s));
   return (s & 0xf0) == 0xf0;
 }
 
 inline int get_age(Square s) {
+  assert(!is_empty(s));
   return s & 0xf;
 }
 
@@ -38,36 +40,37 @@ inline bool is_x(Square s) {
 }
 
 inline int get_link(Square s) {
+  assert(!is_empty(s) && !is_classic(s));
   return s >> 4;
 }
 
 
 class Position {
 public:
-  uint8_t field[9];
+  Square field[9];
 
   Position() {
-    for (int i = 0; i < sizeof field; i++)
+    for (int i = 0; i < 9; i++)
       field[i] = make_empty();
   }
 
   template<typename stream>
-  void print(stream &out) {
+  void print(stream &out) const {
     const std::string big_x = "**  **  **  **  **";
     const std::string big_o = " **** **  ** **** ";
     std::string square_contents[9];
     for (int i = 0; i < 9; i++) {
       Square s = field[i];
-      if (::is_empty(s)) continue;
+      if (is_empty(s)) continue;
       if (is_classic(s)) {
         square_contents[i] = is_x(s) ? big_x : big_o;
-        square_contents[i][17] = '1' + get_age(i);
+        square_contents[i][17] = '1' + get_age(s);
       }
     }
     for (int age = 0; age < 9; age++) {
       for (int i = 0; i < 9; i++) {
         Square s = field[i];
-        if (::is_empty(s)) continue;
+        if (is_empty(s)) continue;
         if (is_classic(s)) continue;
         if (get_age(s) != age) continue;
         std::string mark = (is_x(s) ? "x" : "o") + std::string(1, '1' + age);
