@@ -230,6 +230,9 @@ public:
       if (o_winning_time < 100) {
         final = true; o_score = 2; x_score = 0;
       } else {
+        if (age == 9) {
+          final = true; x_score = o_score = 1;
+        }
       }
   }
 
