@@ -7,9 +7,13 @@ sample: sample.cc pretty_printing.h position.h
 test: test.cc pretty_printing.h position.h
 	$(CC) test.cc -o test
 
+fuzzer: fuzzer.cc pretty_printing.h position.h
+	$(CC) fuzzer.cc -o fuzzer
+
 .PHONY:
-run_test: test
+run_tests: test fuzzer
 	./test  >test.golden
+	./fuzzer
 
 clean:
-	rm sample
+	rm sample test fuzzer
