@@ -232,12 +232,22 @@ public:
       } else {
         if (age == 9) {
           final = true; x_score = o_score = 1;
+        } else if (age == 8) {
+          // Special case where all squares but one are occupied with classic
+          // pieces, so no move can be made.
+          final = true; x_score = o_score = 1;
+          for (int i = 0; i < 9; i++)
+            if (!is_empty(field[i]) && !is_classic(field[i])) {
+              final = false;
+              break;
+            }
         }
       }
   }
 
   template<typename OutputIterator>
   void enumerate_moves(OutputIterator &out_iter) const {
+    assert(!final);
     if (collapsing) {
       int poses[] = {collapse1, collapse2};
       for (int pos : poses) {
