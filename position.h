@@ -55,11 +55,15 @@ public:
   bool collapsing;
   int collapse1, collapse2;
 
+  bool final;
+  int x_score, o_score;
+
   Position() {
     for (int i = 0; i < 9; i++)
       field[i] = make_empty();
     age = 0;
     collapsing = false;
+    final = false;
   }
 
   bool is_sane() const {
@@ -102,6 +106,15 @@ public:
       assert(0 <= collapse2 < 9);
       assert(is_empty(field[collapse1]) || !is_classic(field[collapse1]));
       assert(is_empty(field[collapse2]) || !is_classic(field[collapse2]));
+    }
+
+    if (final) {
+      assert(age >= 3);
+      assert(
+          x_score == 2 && (o_score == 0 || o_score == 1) ||
+          o_score == 2 && (x_score == 0 || x_score == 1) ||
+          x_score == 1 && o_score == 1
+      );
     }
 
     return true;
@@ -154,6 +167,9 @@ public:
         out << std::endl;
       }
     }
+    if (final) {
+      out << x_score << ":" << o_score << std::endl;
+    }
   }
 
   void reroot(int pos) {
@@ -170,6 +186,52 @@ public:
     }
   }
 
+  void update_winning_time(
+      int start, int step, int &x_winning_time, int &o_winning_time) {
+    if (is_empty(field[start]) || !is_classic(field[start]))
+      return;
+    if (is_empty(field[start + step]) || !is_classic(field[start + step]))
+      return;
+    if (is_empty(field[start + 2*step]) || !is_classic(field[start + 2*step]))
+      return;
+    int age1 = get_age(field[start]);
+    int age2 = get_age(field[start + step]);
+    int age3 = get_age(field[start + 2*step]);
+    if (age1 % 2 == age2 % 2 && age1 % 2 == age3 % 2) {
+      int t = std::max(age1, std::max(age2, age3));
+      int &wt = age1 % 2 == 0 ? x_winning_time : o_winning_time;
+      wt = std::min(wt, t);
+    }
+  }
+
+  void check_ending_conditions() {
+    assert(!final);
+    int x_winning_time = 100;
+    int o_winning_time = 100;
+    update_winning_time(0, 1, x_winning_time, o_winning_time);
+    update_winning_time(3, 1, x_winning_time, o_winning_time);
+    update_winning_time(6, 1, x_winning_time, o_winning_time);
+    update_winning_time(0, 3, x_winning_time, o_winning_time);
+    update_winning_time(1, 3, x_winning_time, o_winning_time);
+    update_winning_time(2, 3, x_winning_time, o_winning_time);
+    update_winning_time(0, 4, x_winning_time, o_winning_time);
+    update_winning_time(2, 2, x_winning_time, o_winning_time);
+    if (x_winning_time < 100)
+      if (o_winning_time < 100)
+        if (x_winning_time < o_winning_time) {
+          final = true; x_score = 2; o_score = 1;
+        } else {
+          final = true; x_score = 1; o_score = 2;
+        }
+      else {
+        final = true; x_score = 2; o_score = 0;
+      }
+    else
+      if (o_winning_time < 100) {
+        final = true; o_score = 2; x_score = 0;
+      } else {
+      }
+  }
 
   template<typename OutputIterator>
   void enumerate_moves(OutputIterator &out_iter) const {
@@ -193,6 +255,7 @@ public:
           if (stabilized)
             break;
         }
+        new_position.check_ending_conditions();
         char name[] = {char('1' + pos), '!', 0};
         *out_iter++ = Move(name, new_position);
       }
