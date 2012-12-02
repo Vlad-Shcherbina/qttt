@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include <string>
 #include <iostream>
 
@@ -44,16 +45,21 @@ inline int get_link(Square s) {
   return s >> 4;
 }
 
+struct Move;
 
 class Position {
 public:
   Square field[9];
   int age;
 
+  bool collapsing;
+  int collapse1, collapse2;
+
   Position() {
     for (int i = 0; i < 9; i++)
       field[i] = make_empty();
     age = 0;
+    collapsing = false;
   }
 
   bool is_sane() const {
@@ -74,7 +80,6 @@ public:
     }
 
     for (int a = 0; a < 9; a++) {
-      std::cout << a << std::endl;
       bool found = false;
       for (int i = 0; i < 9; i++) {
         Square s = field[i];
@@ -89,6 +94,14 @@ public:
         assert(found);
       else
         assert(!found);
+    }
+
+    if (collapsing) {
+      assert(age < 9);
+      assert(0 <= collapse1 < 9);
+      assert(0 <= collapse2 < 9);
+      assert(is_empty(field[collapse1]) || !is_classic(field[collapse1]));
+      assert(is_empty(field[collapse2]) || !is_classic(field[collapse2]));
     }
 
     return true;
@@ -121,6 +134,12 @@ public:
       }
     }
 
+    if (collapsing) {
+      std::string mark = age % 2 == 0 ? "x?" : "o?";
+      square_contents[collapse1] += mark;
+      square_contents[collapse2] += mark;
+    }
+
     for (int i = 0; i < 3; i++) {
       if (i > 0)
         out << "------+------+------" << std::endl;
@@ -135,5 +154,93 @@ public:
         out << std::endl;
       }
     }
+  }
+
+  void reroot(int pos) {
+    Square s = field[pos];
+    field[pos] = make_empty();
+
+    while (!is_empty(s)) {
+      assert(!is_classic(s));
+      int age = get_age(s);
+      int link = get_link(s);
+      s = field[link];
+      field[link] = make_quantum(age, pos);
+      pos = link;
+    }
+  }
+
+
+  template<typename OutputIterator>
+  void enumerate_moves(OutputIterator &out_iter) const {
+    if (collapsing) {
+      int poses[] = {collapse1, collapse2};
+      for (int pos : poses) {
+        Position new_position(*this);
+        new_position.age += 1;
+        new_position.collapsing = false;
+        new_position.reroot(pos);
+        new_position.field[pos] = make_classic(new_position.age-1);
+        while (true) {
+          bool stabilized = true;
+          for (int i = 0; i < 9; i++) {
+            Square s = new_position.field[i];
+            if (!is_empty(s) && !is_classic(s)) {
+              stabilized = false;
+              new_position.field[i] = make_classic(get_age(s));
+            }
+          }
+          if (stabilized)
+            break;
+        }
+        char name[] = {char('1' + pos), '!', 0};
+        *out_iter++ = Move(name, new_position);
+      }
+      return;
+    }
+
+    int roots[9] = {0};
+    for (int i = 0; i < 9; i++) {
+      int cur = i;
+      if (!is_empty(field[cur]) && is_classic(field[cur])) continue;
+      while (!is_empty(field[cur])) {
+        assert(!is_classic(field[cur]));
+        cur = get_link(field[cur]);
+      }
+      roots[i] = cur;
+    }
+
+    for (int pos1 = 0; pos1 < 9; pos1++) {
+      if (!is_empty(field[pos1]) && is_classic(field[pos1])) continue;
+      for (int pos2 = pos1+1; pos2 < 9; pos2++) {
+        if (!is_empty(field[pos2]) && is_classic(field[pos2])) continue;
+
+        Position new_position(*this);
+        if (roots[pos1] == roots[pos2]) {
+          new_position.collapsing = true;
+          new_position.collapse1 = pos1;
+          new_position.collapse2 = pos2;
+          char name[] = {char('1' + pos1), char('1' + pos2), '?', 0};
+          *out_iter++ = Move(name, new_position);
+        } else {
+          new_position.age += 1;
+          new_position.reroot(pos1);
+          assert(is_empty(new_position.field[pos1]));
+          new_position.field[pos1] = make_quantum(age, pos2);
+          char name[] = {char('1' + pos1), char('1' + pos2), 0};
+          *out_iter++ = Move(name, new_position);
+        }
+      }
+    }
+  }
+};
+
+struct Move {
+  char name[4];
+  Position position;
+
+  Move() {}
+  Move(const char *name, const Position &p) : position(p) {
+    std::strcpy(this->name, name);
   }
 };
