@@ -246,7 +246,7 @@ public:
   }
 
   template<typename OutputIterator>
-  void enumerate_moves(OutputIterator &out_iter) const {
+  void enumerate_moves(OutputIterator out_iter) const {
     assert(!final);
     if (collapsing) {
       int poses[] = {collapse1, collapse2};

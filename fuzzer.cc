@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <iterator>
+#include <vector>
 
 #include "position.h"
 
@@ -13,15 +15,15 @@ int main() {
   while (true) {
     Position position;
     while (!position.final) {
-      Move moves[36];
-      auto moves_end = moves;
+      vector<Move> moves;
+      moves.reserve(36);
 
-      position.enumerate_moves(moves_end);
+      position.enumerate_moves(back_inserter(moves));
 
-      assert(moves_end - moves <= 36);
-      assert(moves_end > moves);
+      assert(!moves.empty());
+      assert(moves.size() <= 36);
 
-      auto &move = moves[rand() % (moves_end - moves)];
+      auto &move = moves[rand() % moves.size()];
       position = move.position;
       num_moves += 1;
 

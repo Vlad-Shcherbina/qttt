@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <iterator>
 
 #include "pretty_printing.h"
 #include "position.h"
@@ -24,16 +25,15 @@ int main() {
 
   p.print(cout);
 
-  Move moves[36];
-  auto end = moves;
+  vector<Move> moves;
 
-  p.enumerate_moves(end);
-  assert(end - moves <= 36);
+  p.enumerate_moves(back_inserter(moves));
+  assert(moves.size() <= 36);
 
   cout << "==========" << endl;
-  for (auto ptr = moves; ptr != end; ptr++) {
-    cout << ptr->name << endl;
-    (ptr->position).print(cout);
+  for (auto move : moves) {
+    cout << move.name << endl;
+    move.position.print(cout);
   }
 
   cout << "hello, world" << endl;

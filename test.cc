@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <iterator>
 
 #include "position.h"
 
@@ -17,20 +18,19 @@ void run_sequence(vector<string> move_names) {
       continue;
     }
     cout << move_name << " ";
-    Move moves[36];
-    auto moves_end = moves;
+    vector<Move> moves;
 
-    position.enumerate_moves(moves_end);
-    assert(moves_end - moves <= 36);
+    position.enumerate_moves(back_inserter(moves));
+    assert(moves.size() <= 36);
 
-    auto ptr = moves;
-    for (; ptr != moves_end; ptr++) {
-      if (ptr->name == move_name) {
-        position = ptr->position;
+    bool move_found = false;
+    for (auto move : moves)
+      if (move.name == move_name) {
+        position = move.position;
+        move_found = true;
         break;
       }
-    }
-    assert(ptr != moves_end);
+    assert(move_found);
   }
   cout << endl;
   position.print(cout);
