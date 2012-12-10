@@ -4,26 +4,50 @@
 #include <vector>
 #include <string>
 #include <iterator>
+#include <functional>
 
 #include "pretty_printing.h"
 #include "position.h"
 
 using namespace std;
 
+template<typename F>
+bool x_disj_o_conj(const Position &position, F leaf_eval) {
+  if (position.final)
+    return leaf_eval(position);
+
+  vector<Move> moves;
+  moves.reserve(36);
+  position.enumerate_moves(back_inserter(moves));
+  assert(moves.size() <= 36);
+
+  if (position.is_x_move()) {
+    for (auto &move : moves)
+      if (x_disj_o_conj(move.position, leaf_eval))
+        return true;
+    return false;
+  } else {
+    for (auto &move : moves)
+      if (!x_disj_o_conj(move.position, leaf_eval))
+        return false;
+      return true;
+  }
+}
+
 
 int main() {
   Position p;
-  p.field[0] = make_classic(0);
-  p.field[1] = make_classic(1);
-  p.field[2] = make_quantum(3, 3);
-  p.field[3] = make_quantum(2, 6);
-  p.age = 4;
-
-  p.collapsing = true;
-  p.collapse1 = 2;
-  p.collapse2 = 3;
-
   p.print(cout);
+
+  bool result = x_disj_o_conj(
+      p,
+      [](const Position &p) {return p.x_score == 2 && p.o_score == 0;});
+  if (result)
+    printf("x wins\n");
+  else
+    printf("x does not win\n");
+
+  return 0;
 
   vector<Move> moves;
 

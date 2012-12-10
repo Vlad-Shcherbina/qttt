@@ -120,6 +120,13 @@ public:
     return true;
   }
 
+  bool  is_x_move() const {
+    if (!collapsing)
+      return age % 2 == 0;
+    else
+      return age % 2 == 1;
+  }
+
   template<typename stream>
   void print(stream &out) const {
     assert(is_sane());
