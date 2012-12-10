@@ -1,8 +1,8 @@
-CC = g++ -std=c++0x
+CC = g++ -std=c++0x -O2
 
 
-sample: sample.cc pretty_printing.h position.h
-	$(CC) sample.cc -o sample
+play: play.cc pretty_printing.h position.h
+	$(CC) play.cc -o play
 
 test: test.cc pretty_printing.h position.h
 	$(CC) test.cc -o test
@@ -16,4 +16,4 @@ run_tests: test fuzzer
 	./fuzzer
 
 clean:
-	rm sample test fuzzer
+	rm play test fuzzer
